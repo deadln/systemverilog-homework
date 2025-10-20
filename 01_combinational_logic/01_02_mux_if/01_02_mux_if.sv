@@ -31,22 +31,26 @@ module mux_4_1
   // Task:
   // Using code for mux_2_1 as an example,
   // write code for 4:1 mux using the "if" statement
-  logic mux1, mux2. mux3;
+  logic [3:0] mux1;
+  logic [3:0] mux2;
+  logic [3:0] mux3;
 
-  if(sel[0]) begin
-    mux1 = d1;
-    mux2 = d3;
+  always_comb
+  begin
+    if(sel[0]) begin
+      mux1 = d1;
+      mux2 = d3;
+    end
+    else begin
+      mux1 = d0;
+      mux2 = d2;
+    end
+    
+    if(sel[1])
+      mux3 = mux2;
+    else
+      mux3 = mux1;
   end
-  else begin
-    mux1 = d0;
-    mux2 = d2;
-  end
-  
-  if(sel[1])
-    mux3 = mux2;
-  else
-    mux3 = mux1;
-
   assign y = mux3;
 
 endmodule
