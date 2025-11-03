@@ -37,8 +37,6 @@ module testbench;
 
   initial
     begin
-      $dumpfile("test_01_07.vcd");
-      $dumpvars;
       
       test ('ha, 'hb, 'hc, 'hd, 0, 'ha);
       test ('ha, 'hb, 'hc, 'hd, 1, 'hb);
