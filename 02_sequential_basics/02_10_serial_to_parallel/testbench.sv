@@ -7,7 +7,11 @@ module testbench;
     logic clk;
 
     initial
+
+
     begin
+        $dumpfile("signals3.vcd");                                        
+        $dumpvars(0,testbench); // testbench  serial_to_parallel
         clk = '0;
 
         forever
