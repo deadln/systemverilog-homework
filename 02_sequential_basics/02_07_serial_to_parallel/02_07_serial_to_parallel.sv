@@ -69,16 +69,18 @@ module serial_to_parallel
         // new_buffer[1] = serial_buffer[0];
         // new_buffer[0] = serial_data;
 
-        if(serial_counter == width) // Добавил -1
+        if(serial_counter == width-1) // Добавил -1
         begin
             flag_out <= '1;
 
             parallel_valid <= '1;
             // parallel_data <= {serial_data, serial_buffer[7:1]};
             // parallel_data <= 8'b01010101;
-            parallel_data <= serial_buffer; // В Serial Buffer на 9 такт есть нужный рез-тат, значит нужно его "лепить" на 8 такте из куска буффера и serial data
+            parallel_data <= new_buffer; // В Serial Buffer на 9 такт есть нужный рез-тат, значит нужно его "лепить" на 8 такте из куска буффера и serial data
+            // parallel_data <= {serial_data, serial_buffer[7:1]};
+            // parallel_data <= serial_buffer;
             // new_buffer <= '0;
-            serial_counter <= '0;
+            serial_counter <= -1'b1;
         end
         else
             parallel_valid = '0;
