@@ -33,6 +33,12 @@ module circular_right_shift_of_N_by_S_using_bit_slices_and_concatenation
   //
   // "Circular" means ABCDEFGH -> FGHABCDE when N = 8 and S = 3.
 
+  assign res = { a [ S + 1:0 ], a [N - 1:S] };
+
+  // assign res = { {(S){1'b0}}, a [0 : N - 1 - S] };
+
+  // left
+  // assign res = { a [N - S - 1:0], a [N - 1 : N - S] };
 
 endmodule
 
@@ -49,5 +55,6 @@ module circular_right_shift_of_N_by_S_by_ORing_the_results_of_shift_operations
   //
   // "Circular" means ABCDEFGH -> FGHABCDE when N = 8 and S = 3.
 
+  assign res = (a >> S) | (a << (N - S));
 
 endmodule
