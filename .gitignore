@@ -9,3 +9,5 @@ mock_interview*.pdf
 /.vscode/
 synth_results.txt
 synth_log.txt
+homework_zips/
+temp/
