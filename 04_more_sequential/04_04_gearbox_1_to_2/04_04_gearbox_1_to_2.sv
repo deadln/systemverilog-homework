@@ -29,10 +29,10 @@ module gearbox_1_to_2
 
     logic [    width - 1:0] buff_data;
     logic valid_clock;
-    logic output_happened;
+    // logic output_happened;
 
     always_comb begin
-        if(valid_clock && !output_happened)
+        if(up_vld && valid_clock)  // && !output_happened)
         begin
             down_vld <= '1;
             down_data <= {buff_data, up_data};
@@ -50,16 +50,16 @@ module gearbox_1_to_2
     begin
         valid_clock <= '0;
         buff_data <= '0;
-        output_happened <= '0;
+        // output_happened <= '0;
     end
     else if(up_vld)
     begin
         valid_clock <= valid_clock ^ '1;
         buff_data <= up_data;
     end
-    if(valid_clock)
-        output_happened <= '1;
-    else
-        output_happened <= '0;
+    // if(valid_clock)
+    //     output_happened <= '1;
+    // else
+    //     output_happened <= '0;
     end
 endmodule
