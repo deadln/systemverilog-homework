@@ -28,11 +28,28 @@ module conv_first_to_last_no_ready
     logic [width - 1:0] future_data;
     logic future_last;
     logic transmission_is_active;
+    logic prev_was_first;
 
     always_comb begin
-        down_valid <= future_valid;
-        down_data <= future_data;
-        down_last <= future_last;
+        // Всё из буфера
+        // down_valid <= future_valid;
+        // down_data <= future_data;
+        // down_last <= future_last;
+
+        // Из буфера только данные 
+
+        // down_valid = up_valid;
+        // if(up_first !== 1'bX)
+        //     down_last = up_first;
+        // else
+        //     down_last = 1'b0;
+        
+        down_valid = future_valid;
+        down_last = future_last;
+
+        down_data = future_data;
+
+        // ХЗ чё там уже
         // if(up_valid)
         // begin
         //     down_valid <= '1;
@@ -57,22 +74,42 @@ module conv_first_to_last_no_ready
             future_data <= '0;
             future_last <= '0;
             transmission_is_active <= '0;
+            prev_was_first <= '0;
         end
-        else if(up_data)
+        // else if(up_data)
         else
         begin
-            future_valid <= up_valid;
-            future_data <= up_data;
-            
-            if(up_first)
+            // New
+            // if(up_data !== 8'bXXXXXXX)
+                future_data <= up_data;
+            future_valid = up_valid;
+            if(up_first !== 1'bX)
             begin
-                if(transmission_is_active)
-                    future_last <= '1;
-                transmission_is_active <= '1;
-                // future_last <= '1;
+                if(prev_was_first)
+                    future_last = 1'b1;
+                else if(up_first == 1'b1)
+                    future_last = 1'b1;
+                else
+                    future_last = 1'b0;
+                prev_was_first <= up_first;
             end
             else
-                future_last <= '0;
+                future_last = 1'b0;
+            // Old
+            // future_valid <= up_valid;
+            // future_data <= up_data;
+            
+            // if(up_first)
+            // begin
+            //     // if(transmission_is_active)
+            //         future_last <= '1;
+            //     transmission_is_active <= '1;
+            //     // future_last <= '1;
+            // end
+            // else
+            //     future_last <= '0;
+            
+            // ХЗ
             // else
             // begin
             //     transmission_is_active <= '0;
