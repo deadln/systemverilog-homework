@@ -27,43 +27,41 @@ module conv_first_to_last_no_ready
     logic future_valid;
     logic [width - 1:0] future_data;
     logic future_last;
-    logic transmission_is_active;
     logic prev_was_first;
+    logic [1:0] if_state;
 
     always_comb begin
-        // Всё из буфера
-        // down_valid <= future_valid;
-        // down_data <= future_data;
-        // down_last <= future_last;
+        if(up_first !== 1'bX)
+        begin
+            down_valid = future_valid;
+            // down_last = future_last;
+            down_data = future_data;
 
-        // Из буфера только данные 
 
-        // down_valid = up_valid;
-        // if(up_first !== 1'bX)
-        //     down_last = up_first;
-        // else
-        //     down_last = 1'b0;
+            if(prev_was_first && up_first) begin
+                down_last = 1'b1;
+                if_state = 2'b00;
+            end
+            else if(prev_was_first && ~up_first) begin
+                down_last = 1'b0;
+                if_state = 2'b01;
+            end
+            else if(~prev_was_first && up_first) begin
+                down_last = 1'b1;
+                if_state = 2'b10;
+            end
+            else begin
+                down_last = 1'b0;
+                if_state = 2'b11;
+            end
+        end
+        else
+        begin
+            down_valid = '0;
+            down_last = '0;
+            down_data = up_data;
+        end
         
-        down_valid = future_valid;
-        down_last = future_last;
-
-        down_data = future_data;
-
-        // ХЗ чё там уже
-        // if(up_valid)
-        // begin
-        //     down_valid <= '1;
-        //     down_data <= up_data;
-        //     if(up_first)
-        //         down_last <= '1;
-        //     else
-        //         down_last <= '0;
-        // end
-        // begin
-        //     down_valid <= '0;
-        //     down_data <= '0;
-        //     down_last <= '0;
-        // end
     end
 
     always_ff @ (posedge clock)
@@ -73,28 +71,25 @@ module conv_first_to_last_no_ready
             future_valid <= '0;
             future_data <= '0;
             future_last <= '0;
-            transmission_is_active <= '0;
             prev_was_first <= '0;
         end
         // else if(up_data)
-        else
+        else if(up_first !== 1'bX)
         begin
             // New
             // if(up_data !== 8'bXXXXXXX)
-                future_data <= up_data;
-            future_valid = up_valid;
-            if(up_first !== 1'bX)
-            begin
-                if(prev_was_first)
-                    future_last = 1'b1;
-                else if(up_first == 1'b1)
-                    future_last = 1'b1;
-                else
-                    future_last = 1'b0;
-                prev_was_first <= up_first;
-            end
-            else
-                future_last = 1'b0;
+            future_data <= up_data;
+            future_valid <= up_valid;
+            // if(prev_was_first && up_first)
+            //     future_last <= 1'b1;
+            // else if(prev_was_first && ~up_first)
+            //     future_last <= 1'b0;
+            // else if(~prev_was_first && up_first)
+            //     future_last <= 1'b1;
+            // else
+            //     future_last <= 1'b0;
+            prev_was_first <= up_first;
+            
             // Old
             // future_valid <= up_valid;
             // future_data <= up_data;
