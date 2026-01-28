@@ -41,5 +41,109 @@ module formula_1_impl_2_fsm
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm
 
+    // idle - начальное состояние
+    // wait_a_b_res - ждём вычисления a и b
+    // wait_c_res - вычисляем c и складываем
+
+    //------------------------------------------------------------------------
+    // States
+
+    enum logic [2:0]
+    {
+        st_idle       = 3'd0,
+        st_wait_ab_res = 3'd1,
+        st_wait_c_res = 3'd2
+    }
+    state, next_state;
+
+    //------------------------------------------------------------------------
+    // Next state and isqrt interface
+
+    always_comb
+    begin
+        next_state  = state;
+
+        isqrt_1_x_vld = '0;
+        isqrt_1_x     = 'x;  // Don't care
+        isqrt_2_x_vld = '0;
+        isqrt_2_x     = 'x;  // Don't care
+
+        // This lint warning is bogus because we assign the default value above
+        // verilator lint_off CASEINCOMPLETE
+
+        case (state)
+        st_idle:
+        begin
+            isqrt_1_x = a;
+            isqrt_2_x = b;
+
+            if (arg_vld)
+            begin
+                isqrt_1_x_vld = '1;
+                isqrt_2_x_vld = '1;
+                next_state  = st_wait_ab_res;
+            end
+        end
+
+        st_wait_ab_res:
+        begin
+            isqrt_1_x = c;
+
+            if (isqrt_1_y_vld & isqrt_2_y_vld)
+            begin
+                isqrt_1_x_vld = '1;
+                next_state  = st_wait_c_res;
+            end
+        end
+
+        // st_wait_b_res:
+        // begin
+        //     isqrt_x = c;
+
+        //     if (isqrt_y_vld)
+        //     begin
+        //         isqrt_x_vld = '1;
+        //         next_state  = st_wait_c_res;
+        //     end
+        // end
+
+        st_wait_c_res:
+        begin
+            if (isqrt_1_y_vld)
+            begin
+                next_state = st_idle;
+            end
+        end
+        endcase
+
+        // verilator lint_on  CASEINCOMPLETE
+
+    end
+
+    //------------------------------------------------------------------------
+    // Assigning next state
+
+    always_ff @ (posedge clk)
+        if (rst)
+            state <= st_idle;
+        else
+            state <= next_state;
+
+    //------------------------------------------------------------------------
+    // Accumulating the result
+
+    always_ff @ (posedge clk)
+        if (rst)
+            res_vld <= '0;
+        else
+            res_vld <= (state == st_wait_c_res & isqrt_1_y_vld);
+
+    always_ff @ (posedge clk)
+        if (state == st_idle)
+            res <= '0;
+        else if (state == st_wait_ab_res & isqrt_1_y_vld & isqrt_2_y_vld)
+            res <= res + 32' (isqrt_1_y) + 32' (isqrt_2_y);
+        else if (state == st_wait_c_res & isqrt_1_y_vld)
+            res <= res + 32' (isqrt_1_y);
 
 endmodule
