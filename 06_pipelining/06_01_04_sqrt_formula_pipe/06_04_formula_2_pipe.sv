@@ -42,5 +42,34 @@ module formula_2_pipe
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
 
+    localparam width = 32;
+    localparam stages = 5;
+
+    logic isqrt1_vld;
+    logic isqrt2_vld;
+    logic isqrt3_vld;
+    logic isqrt1_out_vld;
+    logic isqrt2_out_vld;
+    logic isqrt3_out_vld;
+
+    logic [width-1:0] isqrt1_data;
+    logic [width-1:0] isqrt2_data;
+    logic [width-1:0] isqrt3_data;
+
+    logic [width-1:0] cb_sum;
+    logic [width-1:0] ba_sum;
+
+    always_ff @ (posedge clk)
+    begin
+        if(isqrt1_vld)
+    end
+
+    shift_register_with_valid # (width, stages+1) sr1(clk, rst, arg_vld, b, isqrt2_vld, isqrt2_data);
+    shift_register_with_valid # (width, stages*2+1) sr2(clk, rst, arg_vld, a, isqrt3_vld, isqrt3_data);
+
+    isqrt i1(clk, rst, arg_vld, c, isqrt1_vld, isqrt1_data);
+    isqrt i2(clk, rst, isqrt2_vld, cb_sum, sqrt_b_valid, sqrt_b);
+    isqrt i3(clk, rst, isqrt3_vld, ba_sum, sqrt_c_valid, sqrt_c);
+
 
 endmodule

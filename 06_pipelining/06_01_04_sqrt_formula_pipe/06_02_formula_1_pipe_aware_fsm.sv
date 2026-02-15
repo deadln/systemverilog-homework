@@ -61,5 +61,177 @@ module formula_1_pipe_aware_fsm
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
 
+    // TODO: убрать, т.к. не используется
+    // logic input_stage_a_valid;
+    // logic input_stage_b_valid;
+    // logic input_stage_c_valid;
+
+    logic [31:0] input_stage_a;
+    logic [31:0] input_stage_b;
+    logic [31:0] input_stage_c;
+
+    logic [2:0]  sqrt_counter;
+    logic [31:0] sqrt_sum;
+
+    logic check_if_1;
+    logic check_if_2;
+    logic output_res_flag;
+
+    // logic sqrt_a_valid;
+    // logic sqrt_b_valid;
+    // logic sqrt_c_valid;
+
+    // logic [31:0] sqrt_a;
+    // logic [31:0] sqrt_b;
+    // logic [31:0] sqrt_c;
+
+    //------------------------------------------------------------------------
+    // States
+
+    enum logic [1:0]
+    {
+        st_set_a       = 2'd0,
+        st_set_b = 2'd1,
+        st_set_c = 2'd2
+    }
+    state, next_state;
+
+    //------------------------------------------------------------------------
+    
+    // Input valid logic
+    // always_ff @ (posedge clk or posedge rst)
+    //     if (rst) begin
+    //         input_stage_a_valid <= '0;
+    //         input_stage_b_valid <= '0;
+    //         input_stage_c_valid <= '0;
+    //     end
+    //     else begin
+    //         input_stage_a_valid <= arg_vld;
+    //         input_stage_b_valid <= arg_vld;
+    //         input_stage_c_valid <= arg_vld;
+    //     end
+
+    
+    // Input data pipeline TODO: возможно перенести во внутреннее состояние с помощью условия
+    always_ff @ (posedge clk)
+        if (arg_vld)
+            input_stage_a <= a;
+
+    always_ff @ (posedge clk)
+        if (arg_vld)
+            input_stage_b <= b;
+            
+    always_ff @ (posedge clk)
+        if (arg_vld)
+            input_stage_c <= c;
+
+    //------------------------------------------------------------------------
+    // Next state and isqrt interface
+    always_comb
+    begin
+        next_state  = state;
+
+        isqrt_x_vld = '0;
+        isqrt_x     = 'x;  // Don't care
+
+        // This lint warning is bogus because we assign the default value above
+        // verilator lint_off CASEINCOMPLETE
+
+        case (state)
+        st_set_a:
+        begin
+            isqrt_x = a;
+
+            if (arg_vld)
+            begin
+                isqrt_x_vld = '1;
+                next_state  = st_set_b;
+            end
+        end
+
+        st_set_b:
+        begin
+            isqrt_x = input_stage_b;
+            isqrt_x_vld = '1;
+            next_state  = st_set_c;
+        end
+
+        st_set_c:
+        begin
+            isqrt_x = input_stage_c;
+            isqrt_x_vld = '1;
+            next_state  = st_set_a;
+        end
+
+        endcase
+
+        // verilator lint_on  CASEINCOMPLETE
+
+    end
+    //------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------
+    // Assigning next state
+
+    always_ff @ (posedge clk)
+        if (rst)
+            state <= st_set_a;
+        else
+            state <= next_state;
+
+    //------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------
+    // Accumulating the result
+
+    // always_ff @ (posedge clk)
+    //     if (rst)
+    //         res_vld <= '0;
+    //     else
+    //         res_vld <= (sqrt_counter == 3'd3);// && isqrt_y_vld);
+
+    always_ff @ (posedge clk)
+    begin
+        if(rst)
+        begin
+            res_vld <= '0;
+            sqrt_sum = '0;
+            sqrt_counter = '0;
+            output_res_flag = '0;
+
+            check_if_1 = '0;
+            check_if_2 = '0;
+        end
+        else if (isqrt_y_vld)
+        begin
+            if(sqrt_counter == 3'd3 && res_vld)
+            begin
+                res_vld <= '0;
+                sqrt_sum = '0;
+                sqrt_counter = '0;
+            end
+            check_if_1 = '1;
+            sqrt_sum = sqrt_sum + isqrt_y;
+            sqrt_counter = sqrt_counter + 1'd1;
+            if(sqrt_counter == 3'd3)
+            begin
+                check_if_2 = '1;
+                // output_res_flag = '1;
+                res_vld <= '1;
+                res <= sqrt_sum;
+                sqrt_sum <= '0;
+                sqrt_counter = '0;
+            end
+            // else if (output_res_flag)
+            //     output_res_flag = '0;
+        end
+        else
+        begin
+            res_vld <= '0;
+            check_if_1 = '0;
+            check_if_2 = '0;
+        end
+    end
+    
 
 endmodule
