@@ -12,8 +12,8 @@ module sqrt_formula_distributor
     input  [31:0] b,
     input  [31:0] c,
 
-    output        res_vld,
-    output [31:0] res
+    output logic        res_vld,
+    output logic [31:0] res
 );
 
     // Task:
@@ -43,5 +43,164 @@ module sqrt_formula_distributor
     // Instantiate sufficient number of "formula_1_impl_1_top", "formula_1_impl_2_top",
     // or "formula_2_top" modules to achieve desired performance.
 
+    // formula_1_impl_1_top f1_i1( // 14 тактов
+
+    // formula_1_impl_2_fsm f1_i2( // 34 такта
+
+    // formula_2_fsm i_formula_2_fsm (.*); // 50 тактов
+
+    localparam N = 16;
+
+    logic [N-1:0] arg_vld_input_stage;
+    logic [31:0] a_input_stage [0:N-1];
+    logic [31:0] b_input_stage [0:N-1];
+    logic [31:0] c_input_stage [0:N-1];
+
+    logic [$clog2(N)-1:0] cnt_index;
+
+    logic [N-1:0] res_vld_arr1;
+    logic [N-1:0] res_vld_arr2;
+    logic [N-1:0] res_vld_arr3;
+    logic [31:0] res_mux [0:N-1];
+
+    always_ff @ (posedge clk)
+    begin
+        if(rst)
+        begin
+            for (int i = 0; i < N; i ++)
+            begin
+                arg_vld_input_stage[i] <= '0;
+                a_input_stage[i] <= '0;
+                b_input_stage[i] <= '0;
+                c_input_stage[i] <= '0;
+                cnt_index <= '0;
+
+                res_vld_arr1[i] <= '0;
+                res_vld_arr2[i] <= '0;
+                res_vld_arr3[i] <= '0;
+            end
+        end
+        else// if(arg_vld)
+        begin
+            arg_vld_input_stage [cnt_index] <= arg_vld;
+            a_input_stage[cnt_index] <= a;
+            b_input_stage[cnt_index] <= b;
+            c_input_stage[cnt_index] <= c;
+            cnt_index <= cnt_index + 1;
+        end
+    end
+
+    
+
+    generate
+        genvar i;
+        if(formula == 1 && impl == 1)
+            for (i = 0; i < N; i ++)
+            begin
+                formula_1_impl_1_top f1i1//[N-1:0]
+                        (
+                            .clk     ( clk         ),
+                            .rst     ( rst         ),
+                            .arg_vld ( arg_vld_input_stage ),
+                            .a       ( a_input_stage[i]     ),
+                            .b       ( b_input_stage[i] ),
+                            .c       ( c_input_stage[i]     ),
+                            .res_vld (res_vld_arr1[i]),
+                            .res     (res_mux[i])
+                        );
+            end
+        else if(formula == 1 && impl == 2)
+        for (i = 0; i < N; i ++)
+            begin
+                formula_1_impl_2_top f1i2//[N-1:0]
+                    (
+                        .clk     ( clk         ),
+                        .rst     ( rst         ),
+                        .arg_vld ( arg_vld_input_stage ),
+                        .a       ( a_input_stage[i]     ),
+                        .b       ( b_input_stage[i] ),
+                        .c       ( c_input_stage[i]     ),
+                        .res_vld (res_vld_arr1[i]),
+                        .res     (res_mux[i])
+                    );
+            end
+        else if(formula == 2)
+        for (i = 0; i < N; i ++)
+            begin
+                formula_1_impl_2_top f1i2//[N-1:0]
+                    (
+                        .clk     ( clk         ),
+                        .rst     ( rst         ),
+                        .arg_vld ( arg_vld_input_stage ),
+                        .a       ( a_input_stage[i]     ),
+                        .b       ( b_input_stage[i] ),
+                        .c       ( c_input_stage[i]     ),
+                        .res_vld (res_vld_arr1[i]),
+                        .res     (res_mux[i])
+                    );
+            end
+
+
+        // for (i = 0; i < N; i ++)
+        // begin
+        //     if(formula == 1)
+        //     begin
+        //         if(impl == 1)
+        //         begin
+        //             formula_1_impl_1_top f1i1[N-1:0]
+        //             (
+        //                 .clk     ( clk         ),
+        //                 .rst     ( rst         ),
+        //                 .arg_vld ( arg_vld_input_stage ),
+        //                 .a       ( a_input_stage[i]     ),
+        //                 .b       ( b_input_stage[i] ),
+        //                 .c       ( c_input_stage[i]     ),
+        //                 .res_vld (res_vld_arr1),
+        //                 .res     (res_mux[i])
+        //             );
+        //         end
+        //         else
+        //         begin
+        //             formula_1_impl_2_top f1i2[N-1:0]
+        //             (
+        //                 .clk     ( clk         ),
+        //                 .rst     ( rst         ),
+        //                 .arg_vld ( arg_vld_input_stage ),
+        //                 .a       ( a_input_stage[i]     ),
+        //                 .b       ( b_input_stage[i] ),
+        //                 .c       ( c_input_stage[i]     ),
+        //                 .res_vld (res_vld_arr2),
+        //                 .res     (res_mux[i])
+        //             );
+        //         end
+        //     end
+        //     else
+        //     begin
+        //         formula_2_top f2[N-1:0]
+        //         (
+        //             .clk     ( clk         ),
+        //             .rst     ( rst         ),
+        //             .arg_vld ( arg_vld_input_stage ),
+        //             .a       ( a_input_stage[i]     ),
+        //             .b       ( b_input_stage[i] ),
+        //             .c       ( c_input_stage[i]     ),
+        //             .res_vld (res_vld_arr3),
+        //             .res     (res_mux[i])
+        //         );
+        //     end
+        // end
+    endgenerate
+
+    assign res_vld = res_vld_arr1[cnt_index];
+    assign res = res_mux[cnt_index];
+
+    // for (int i = 0; i < N; i ++)
+    // begin
+    //     if(formula == 1)
+    //     begin
+
+    //     end
+    //     else if(formula == 2)
+    // end
 
 endmodule
