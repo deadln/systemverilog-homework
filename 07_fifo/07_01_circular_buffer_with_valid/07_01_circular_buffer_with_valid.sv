@@ -100,4 +100,39 @@ module circular_buffer_with_valid
     // the pointer only in cases of valid data transfer.
 
 
+    localparam pointer_width = $clog2 (depth);
+    localparam [pointer_width - 1:0] max_ptr = pointer_width' (depth - 1);
+
+    logic [pointer_width - 1:0] ptr;
+
+    always_ff @ (posedge clk or posedge rst)
+        if (rst)
+            ptr <= '0;
+        else if(in_valid)
+            ptr <= ( ptr == max_ptr ) ? '0 : ptr + 1'b1;
+
+    //------------------------------------------------------------------------
+
+    logic [width - 1:0] data [0: depth - 1];
+    logic [depth - 1:0] data_valid;
+
+    always_ff @ (posedge clk)
+        if (rst)
+        begin
+            in_valid <= '0;
+            // data <= '{default:'0};
+            for (int i; i < depth; i++)
+            begin
+                data[i] <= '0;
+            end
+        end
+        else if(in_valid)
+        begin
+            data_valid <= in_valid;
+            data [ptr] <= in_data;
+        end
+
+    assign out_valid  = data_valid [ptr];
+    assign out_data  = data [ptr];
+
 endmodule
