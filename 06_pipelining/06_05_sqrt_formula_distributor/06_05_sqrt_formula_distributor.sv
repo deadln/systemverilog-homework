@@ -49,44 +49,48 @@ module sqrt_formula_distributor
 
     // formula_2_fsm i_formula_2_fsm (.*); // 50 тактов
 
-    localparam N = 16;
+    localparam N = 64;
 
     logic [N-1:0] arg_vld_input_stage;
     logic [31:0] a_input_stage [0:N-1];
     logic [31:0] b_input_stage [0:N-1];
     logic [31:0] c_input_stage [0:N-1];
 
-    logic [$clog2(N)-1:0] cnt_index;
+    logic [$clog2(N)-1:0] input_index;
+    logic [$clog2(N)-1:0] output_index;
 
     logic [N-1:0] res_vld_arr1;
-    logic [N-1:0] res_vld_arr2;
-    logic [N-1:0] res_vld_arr3;
+    // logic [N-1:0] res_vld_arr2;
+    // logic [N-1:0] res_vld_arr3;
     logic [31:0] res_mux [0:N-1];
 
     always_ff @ (posedge clk)
     begin
         if(rst)
         begin
+            arg_vld_input_stage <= '0;
+            input_index <= '0;
+            // res_vld_arr1 <= '0;
+            // res_vld_arr2 <= '0;
+            // res_vld_arr3 <= '0;
             for (int i = 0; i < N; i ++)
             begin
-                arg_vld_input_stage[i] <= '0;
                 a_input_stage[i] <= '0;
                 b_input_stage[i] <= '0;
                 c_input_stage[i] <= '0;
-                cnt_index <= '0;
-
-                res_vld_arr1[i] <= '0;
-                res_vld_arr2[i] <= '0;
-                res_vld_arr3[i] <= '0;
             end
         end
         else// if(arg_vld)
         begin
-            arg_vld_input_stage [cnt_index] <= arg_vld;
-            a_input_stage[cnt_index] <= a;
-            b_input_stage[cnt_index] <= b;
-            c_input_stage[cnt_index] <= c;
-            cnt_index <= cnt_index + 1;
+            arg_vld_input_stage <= '0;
+            if(arg_vld)
+            begin
+                arg_vld_input_stage [input_index] <= arg_vld;
+                a_input_stage[input_index] <= a;
+                b_input_stage[input_index] <= b;
+                c_input_stage[input_index] <= c;
+                input_index <= input_index + 1;
+            end
         end
     end
 
@@ -101,7 +105,7 @@ module sqrt_formula_distributor
                         (
                             .clk     ( clk         ),
                             .rst     ( rst         ),
-                            .arg_vld ( arg_vld_input_stage ),
+                            .arg_vld ( arg_vld_input_stage[i] ),
                             .a       ( a_input_stage[i]     ),
                             .b       ( b_input_stage[i] ),
                             .c       ( c_input_stage[i]     ),
@@ -116,7 +120,7 @@ module sqrt_formula_distributor
                     (
                         .clk     ( clk         ),
                         .rst     ( rst         ),
-                        .arg_vld ( arg_vld_input_stage ),
+                        .arg_vld ( arg_vld_input_stage[i] ),
                         .a       ( a_input_stage[i]     ),
                         .b       ( b_input_stage[i] ),
                         .c       ( c_input_stage[i]     ),
@@ -127,11 +131,11 @@ module sqrt_formula_distributor
         else if(formula == 2)
         for (i = 0; i < N; i ++)
             begin
-                formula_1_impl_2_top f1i2//[N-1:0]
+                formula_2_top f1i2//[N-1:0]
                     (
                         .clk     ( clk         ),
                         .rst     ( rst         ),
-                        .arg_vld ( arg_vld_input_stage ),
+                        .arg_vld ( arg_vld_input_stage[i] ),
                         .a       ( a_input_stage[i]     ),
                         .b       ( b_input_stage[i] ),
                         .c       ( c_input_stage[i]     ),
@@ -191,8 +195,20 @@ module sqrt_formula_distributor
         // end
     endgenerate
 
-    assign res_vld = res_vld_arr1[cnt_index];
-    assign res = res_mux[cnt_index];
+    always_ff @ (posedge clk or posedge rst)
+    begin
+        if(rst)
+        begin
+            output_index <= '0;
+        end
+        else if(res_vld)
+        begin
+            output_index <= output_index + 1'b1;
+        end
+    end
+
+    assign res_vld = res_vld_arr1[output_index];
+    assign res = res_mux[output_index];
 
     // for (int i = 0; i < N; i ++)
     // begin
