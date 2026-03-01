@@ -42,4 +42,79 @@ module formula_2_pipe_using_fifos
     // You can download this issue from https://fpga-systems.ru/fsm
 
 
+    localparam width = 32;
+    localparam stages = 16;
+
+    logic isqrt1_in_vld;
+    logic isqrt2_in_vld;
+    logic isqrt3_in_vld;
+    logic isqrt1_out_vld;
+    logic isqrt2_out_vld;
+    logic isqrt3_out_vld;
+
+    logic b_delayed_vld;
+    logic a_delayed_vld;
+
+    logic [width-1:0] b_delayed;
+    logic [width-1:0] a_delayed;
+
+    logic [width-1:0] isqrt1_output;
+    logic [width-1:0] isqrt2_output;
+    logic [width-1:0] isqrt3_output;
+
+    logic [width-1:0] cb_sum;
+    logic [width-1:0] ba_sum;
+
+    logic fifo1_empty;
+    logic fifo1_full;
+    logic fifo2_empty;
+    logic fifo2_full;
+
+    always_ff @ (posedge clk)
+    begin
+        if(rst)
+        begin
+            // isqrt1_out_vld <= '0;
+            // isqrt2_out_vld <= '0;
+            // isqrt3_out_vld <= '0;
+            isqrt1_in_vld <= '0;
+            isqrt2_in_vld <= '0;
+            isqrt3_in_vld <= '0;
+        end
+        if(isqrt1_out_vld)
+        begin
+            cb_sum = isqrt1_output + b_delayed;
+        end
+        if(isqrt2_out_vld)
+        begin
+            ba_sum = isqrt2_output + a_delayed;
+        end
+ 
+        isqrt2_in_vld <= isqrt1_out_vld;
+        isqrt3_in_vld <= isqrt2_out_vld;
+
+    end
+
+//     module flip_flop_fifo_with_counter
+// # (
+//     parameter width = 8, depth = 10
+// )
+// (
+//     input                clk,
+//     input                rst,
+//     input                push,
+//     input                pop,
+//     input  [width - 1:0] write_data,
+//     output [width - 1:0] read_data,
+//     output               empty,
+//     output               full
+// );
+
+    flip_flop_fifo_with_counter # (width, stages*3) fifo1(clk, rst, arg_vld, isqrt1_out_vld, b, b_delayed, fifo1_empty, fifo1_full);
+    flip_flop_fifo_with_counter # (width, stages*3) fifo2(clk, rst, arg_vld, isqrt2_out_vld, a, a_delayed, fifo2_empty, fifo2_full);
+
+    isqrt i1(clk, rst, arg_vld, c, isqrt1_out_vld, isqrt1_output);
+    isqrt i2(clk, rst, isqrt2_in_vld, cb_sum, isqrt2_out_vld, isqrt2_output);
+    isqrt i3(clk, rst, isqrt3_in_vld, ba_sum, res_vld, res);
+
 endmodule
